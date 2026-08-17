@@ -7,18 +7,52 @@ import {
 
 export async function POST(request: Request) {
   try {
+    // const body = await request.json();
+
+    // const url =
+    //   typeof body.url === "string"
+    //     ? body.url.trim()
+    //     : "";
+
+    // if (!url) {
+    //   return NextResponse.json(
+    //     {
+    //       success: false,
+    //       error: "url is required",
+    //     },
+    //     { status: 400 },
+    //   );
+    // }
+
+    // const result =
+    //   await triggerBrightDataScraper({
+    //     url: body.url,
+    //     collectorId: body.collectorId,
+    //   });
+
     const body = await request.json();
 
-    const url =
-      typeof body.url === "string"
-        ? body.url.trim()
-        : "";
-
-    if (!url) {
+    if (
+      typeof body.url !== "string" ||
+      !body.url.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "url is required",
+          error: "URL is required",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      typeof body.collectorId !== "string" ||
+      !body.collectorId.trim()
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Bright Data collectorId is required",
         },
         { status: 400 },
       );
@@ -26,7 +60,8 @@ export async function POST(request: Request) {
 
     const result =
       await triggerBrightDataScraper({
-        url,
+        url: body.url.trim(),
+        collectorId: body.collectorId.trim(),
       });
 
     return NextResponse.json({

@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "./client";
-import { scraperRuns, scrapers } from "./schema";
+import { scraperRuns, scrapers, failures } from "./schema";
 
 /**
  * Get all active scrapers.
@@ -206,6 +206,58 @@ export async function attachBrightDataCollection(
     })
     .where(eq(scraperRuns.id, runId))
     .returning();
+
+  return result[0] ?? null;
+}
+
+
+/**
+ * Create a scraper failure record.
+ *
+ * A failure represents a problem detected during
+ * validation of a scraper run.
+ */
+export async function createFailure(input: {
+  scraperId: string;
+  runId: string;
+  type:
+    | "selector_missing"
+    | "empty_result"
+    | "schema_invalid"
+    | "data_changed"
+    | "page_structure_changed"
+    | "unknown";
+  message: string;
+  oldSelector?: string;
+  expectedRecords?: number;
+  actualRecords?: number;
+}) {
+  const result = await db
+    .insert(failures)
+    .values({
+      scraperId: input.scraperId,
+      runId: input.runId,
+      type: input.type,
+      message: input.message,
+      oldSelector: input.oldSelector,
+      expectedRecords:
+        input.expectedRecords,
+      actualRecords:
+        input.actualRecords,
+    })
+    .returning();
+
+  return result[0] ?? null;
+}
+
+export async function getFailureById(
+  id: string,
+) {
+  const result = await db
+    .select()
+    .from(failures)
+    .where(eq(failures.id, id))
+    .limit(1);
 
   return result[0] ?? null;
 }
