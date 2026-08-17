@@ -7,8 +7,12 @@ interface ScraperFormProps {
 }
 
 export function ScraperForm({ onCreated }: ScraperFormProps) {
+  // const [name, setName] = useState("");
+  // const [url, setUrl] = useState("");
+  // const [description, setDescription] = useState("");
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
+  const [collectorId, setCollectorId] = useState("");
   const [description, setDescription] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,9 +48,15 @@ export function ScraperForm({ onCreated }: ScraperFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        // body: JSON.stringify({
+        //   name: name.trim(),
+        //   url: url.trim(),
+        //   description: description.trim() || undefined,
+        // }),
         body: JSON.stringify({
           name: name.trim(),
           url: url.trim(),
+          datasetId: collectorId.trim() || undefined,
           description: description.trim() || undefined,
         }),
       });
@@ -59,8 +69,12 @@ export function ScraperForm({ onCreated }: ScraperFormProps) {
         );
       }
 
+      // setName("");
+      // setUrl("");
+      // setDescription("");
       setName("");
       setUrl("");
+      setCollectorId("");
       setDescription("");
 
       onCreated();
@@ -127,7 +141,29 @@ export function ScraperForm({ onCreated }: ScraperFormProps) {
             className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-blue-500/50"
           />
         </div>
+        <div>
+          <label
+            htmlFor="scraper-collector-id"
+            className="mb-2 block text-sm font-medium text-zinc-300"
+          >
+            Bright Data Collector ID
+          </label>
 
+          <input
+            id="scraper-collector-id"
+            value={collectorId}
+            onChange={(event) =>
+              setCollectorId(event.target.value)
+            }
+            placeholder="c_msx2ztefhbwpo451v"
+            disabled={isSubmitting}
+            className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-blue-500/50"
+          />
+
+          <p className="mt-2 text-xs text-zinc-600">
+            The Collector ID from Bright Data Scraper Studio.
+          </p>
+        </div>
         <div>
           <label
             htmlFor="scraper-description"

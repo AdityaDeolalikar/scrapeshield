@@ -44,6 +44,8 @@ export const scrapers = pgTable("scrapers", {
     .notNull()
     .defaultNow(),
 
+  collectorId: text("collector_id"),
+
   updatedAt: timestamp("updated_at", {
     withTimezone: true,
   })
@@ -70,7 +72,7 @@ export const scraperRuns = pgTable("scraper_runs", {
   ),
 
   status: text("status")
-    .$type<"running" | "success" | "failed" | "healing">()
+    .$type<"running" | "collecting" | "success" | "failed" | "healing">()
     .notNull()
     .default("running"),
 

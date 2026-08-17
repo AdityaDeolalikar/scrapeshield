@@ -13,19 +13,6 @@ function getApiToken(): string {
   return token;
 }
 
-function getCollectorId(): string {
-  const collectorId =
-    process.env.BRIGHT_DATA_COLLECTOR_ID;
-
-  if (!collectorId) {
-    throw new Error(
-      "BRIGHT_DATA_COLLECTOR_ID is not configured.",
-    );
-  }
-
-  return collectorId;
-}
-
 async function parseBrightDataResponse(
   response: Response,
 ): Promise<unknown> {
@@ -47,8 +34,9 @@ async function parseBrightDataResponse(
  */
 export async function triggerBrightDataScraper(input: {
   url: string;
+  collectorId: string;
 }) {
-  const collectorId = getCollectorId();
+  const { url, collectorId } = input;
 
   const triggerUrl = new URL(
     `${BRIGHT_DATA_API_URL}/trigger`,

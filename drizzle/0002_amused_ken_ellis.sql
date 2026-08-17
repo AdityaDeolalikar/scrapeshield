@@ -1,0 +1,1 @@
+ALTER TABLE "scrapers" ADD COLUMN "collector_id" text;

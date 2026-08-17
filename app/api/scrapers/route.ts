@@ -69,6 +69,10 @@ export async function POST(request: Request) {
     const scraper = await createScraper({
       name: body.name.trim(),
       url: body.url.trim(),
+      collectorId:
+        typeof body.collectorId === "string"
+          ? body.collectorId.trim()
+          : undefined,
       description:
         typeof body.description === "string"
           ? body.description.trim()

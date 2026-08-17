@@ -27,12 +27,49 @@ export async function getScraperById(id: string) {
   return result[0] ?? null;
 }
 
+export async function updateScraper(
+  id: string,
+  input: {
+    name?: string;
+    url?: string;
+    collectorId?: string;
+    description?: string;
+  },
+) {
+  const result = await db
+    .update(scrapers)
+    .set({
+      ...(input.name !== undefined && {
+        name: input.name,
+      }),
+
+      ...(input.url !== undefined && {
+        url: input.url,
+      }),
+
+      ...(input.collectorId !== undefined && {
+        collectorId: input.collectorId,
+      }),
+
+      ...(input.description !== undefined && {
+        description: input.description,
+      }),
+
+      updatedAt: new Date(),
+    })
+    .where(eq(scrapers.id, id))
+    .returning();
+
+  return result[0] ?? null;
+}
+
 /**
  * Create a new scraper.
  */
 export async function createScraper(input: {
   name: string;
   url: string;
+  collectorId? :string;
   description?: string;
 }) {
   const result = await db
@@ -40,6 +77,7 @@ export async function createScraper(input: {
     .values({
       name: input.name,
       url: input.url,
+      collectorId: input.collectorId,
       description: input.description,
     })
     .returning();
@@ -140,6 +178,23 @@ export async function failScraperRun(
 }
 
 
+export async function setRunCollecting(
+  runId: string,
+) {
+  const result = await db
+    .update(scraperRuns)
+    .set({
+      status: "collecting",
+    })
+    .where(eq(scraperRuns.id, runId))
+    .returning();
+
+  return result[0] ?? null;
+}
+
+/**
+ * Attach Bright Data collection to a scraper run.
+ */
 export async function attachBrightDataCollection(
   runId: string,
   collectionId: string,
