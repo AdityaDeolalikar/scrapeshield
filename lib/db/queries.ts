@@ -138,3 +138,19 @@ export async function failScraperRun(
 
   return result[0] ?? null;
 }
+
+
+export async function attachBrightDataCollection(
+  runId: string,
+  collectionId: string,
+) {
+  const result = await db
+    .update(scraperRuns)
+    .set({
+      brightDataCollectionId: collectionId,
+    })
+    .where(eq(scraperRuns.id, runId))
+    .returning();
+
+  return result[0] ?? null;
+}

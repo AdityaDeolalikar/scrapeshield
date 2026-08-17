@@ -1,0 +1,1 @@
+ALTER TABLE "scraper_runs" ADD COLUMN "bright_data_collection_id" text;

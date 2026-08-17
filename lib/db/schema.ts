@@ -65,6 +65,10 @@ export const scraperRuns = pgTable("scraper_runs", {
       onDelete: "cascade",
     }),
 
+  brightDataCollectionId: text(
+    "bright_data_collection_id",
+  ),
+
   status: text("status")
     .$type<"running" | "success" | "failed" | "healing">()
     .notNull()
@@ -87,6 +91,8 @@ export const scraperRuns = pgTable("scraper_runs", {
   completedAt: timestamp("completed_at", {
     withTimezone: true,
   }),
+
+
 });
 
 /**
