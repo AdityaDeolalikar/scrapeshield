@@ -1,7 +1,14 @@
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "./client";
-import { scraperRuns, scrapers, failures } from "./schema";
+// import { scraperRuns, scrapers, failures } from "./schema";
+import {
+  failures,
+  repairs,
+  scraperRuns,
+  scraperVersions,
+  scrapers,
+} from "./schema";
 
 /**
  * Get all active scrapers.
@@ -250,6 +257,21 @@ export async function createFailure(input: {
   return result[0] ?? null;
 }
 
+// export async function getFailureById(
+//   id: string,
+// ) {
+//   const result = await db
+//     .select()
+//     .from(failures)
+//     .where(eq(failures.id, id))
+//     .limit(1);
+
+//   return result[0] ?? null;
+// }
+
+/**
+ * Get a failure by ID.
+ */
 export async function getFailureById(
   id: string,
 ) {
@@ -258,6 +280,166 @@ export async function getFailureById(
     .from(failures)
     .where(eq(failures.id, id))
     .limit(1);
+
+  return result[0] ?? null;
+}
+
+/**
+ * Create a repair attempt.
+ */
+export async function createRepair(input: {
+  scraperId: string;
+  runId: string;
+  failureId: string;
+  oldSelector: string;
+  newSelector: string;
+  confidence: number;
+  reason: string;
+}) {
+  const result = await db
+    .insert(repairs)
+    .values({
+      scraperId: input.scraperId,
+      runId: input.runId,
+      failureId: input.failureId,
+
+      status: "detected",
+
+      oldSelector:
+        input.oldSelector,
+
+      newSelector:
+        input.newSelector,
+
+      confidence:
+        input.confidence,
+
+      reason:
+        input.reason,
+    })
+    .returning();
+
+  return result[0] ?? null;
+}
+
+/**
+ * Get a repair by ID.
+ */
+export async function getRepairById(
+  id: string,
+) {
+  const result = await db
+    .select()
+    .from(repairs)
+    .where(eq(repairs.id, id))
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+/**
+ * Approve a repair.
+ */
+export async function approveRepair(
+  repairId: string,
+) {
+  const result = await db
+    .update(repairs)
+    .set({
+      status: "approved",
+      completedAt: new Date(),
+    })
+    .where(eq(repairs.id, repairId))
+    .returning();
+
+  return result[0] ?? null;
+}
+
+/**
+ * Reject a repair.
+ */
+export async function rejectRepair(
+  repairId: string,
+) {
+  const result = await db
+    .update(repairs)
+    .set({
+      status: "rejected",
+      completedAt: new Date(),
+    })
+    .where(eq(repairs.id, repairId))
+    .returning();
+
+  return result[0] ?? null;
+}
+
+/**
+ * Create a new scraper version.
+ */
+export async function createScraperVersion(
+  input: {
+    scraperId: string;
+    version: string;
+    selectors: unknown;
+    schema: unknown;
+    isActive?: boolean;
+  },
+) {
+  const result = await db
+    .insert(scraperVersions)
+    .values({
+      scraperId: input.scraperId,
+
+      version:
+        input.version,
+
+      selectors:
+        input.selectors,
+
+      schema:
+        input.schema,
+
+      isActive:
+        input.isActive ?? false,
+    })
+    .returning();
+
+  return result[0] ?? null;
+}
+
+/**
+ * Activate a scraper version.
+ *
+ * Only one version should be active at a time.
+ */
+export async function activateScraperVersion(
+  scraperId: string,
+  versionId: string,
+) {
+  await db
+    .update(scraperVersions)
+    .set({
+      isActive: false,
+    })
+    .where(
+      eq(
+        scraperVersions.scraperId,
+        scraperId,
+      ),
+    );
+
+  const result = await db
+    .update(scraperVersions)
+    .set({
+      isActive: true,
+    })
+    .where(
+      eq(
+        scraperVersions.id,
+        versionId,
+      ),
+    )
+    .returning();
 
   return result[0] ?? null;
 }

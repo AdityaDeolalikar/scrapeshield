@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  createRepair,
   getFailureById,
   getScraperById,
 } from "@/lib/db/queries";
@@ -22,6 +23,8 @@ interface RouteContext {
     id: string;
   }>;
 }
+
+
 
 export async function POST(
   _request: Request,
@@ -145,13 +148,67 @@ export async function POST(
     const recommendation =
       validCandidates[0] ?? null;
 
+    if (!analysis.oldSelector) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to create repair: old selector is missing.",
+        },
+        { status: 422 },
+      );
+    }
+
+    if (
+      !recommendation ||
+      !analysis.oldSelector
+    ) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          repairable: false,
+          failureId: failure.id,
+          analysis,
+          candidates: rankedCandidates,
+          recommendation,
+        },
+      });
+    }
+
+    let repair = null;
+
+    if (recommendation) {
+      repair = await createRepair({
+        scraperId:
+          failure.scraperId,
+
+        runId:
+          failure.runId,
+
+        failureId:
+          failure.id,
+
+        oldSelector:
+          analysis.oldSelector,
+
+        newSelector:
+          recommendation.selector,
+
+        confidence:
+          recommendation.score,
+
+        reason:
+          analysis.reason,
+      });
+    }
+
     return NextResponse.json({
       success: true,
 
       data: {
         repairable: true,
 
-        failureId: failure.id,
+        failureId:
+          failure.id,
 
         analysis,
 
@@ -159,6 +216,8 @@ export async function POST(
           rankedCandidates,
 
         recommendation,
+
+        repair,
       },
     });
   } catch (error) {
