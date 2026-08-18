@@ -443,3 +443,69 @@ export async function activateScraperVersion(
 
   return result[0] ?? null;
 }
+
+/**
+ * Get the active version of a scraper.
+ */
+export async function getActiveScraperVersion(
+  scraperId: string,
+) {
+  const result = await db
+    .select()
+    .from(scraperVersions)
+    .where(
+      eq(
+        scraperVersions.scraperId,
+        scraperId,
+      ),
+    )
+    .limit(100);
+
+  return (
+    result.find(
+      (version) => version.isActive,
+    ) ?? null
+  );
+}
+
+/**
+ * Get the latest version of a scraper.
+ */
+export async function getLatestScraperVersion(
+  scraperId: string,
+) {
+  const result = await db
+    .select()
+    .from(scraperVersions)
+    .where(
+      eq(
+        scraperVersions.scraperId,
+        scraperId,
+      ),
+    )
+    .orderBy(
+      desc(scraperVersions.createdAt),
+    )
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+/**
+ * Update the current version of a scraper.
+ */
+export async function updateScraperVersion(
+  scraperId: string,
+  version: string,
+) {
+  const result = await db
+    .update(scrapers)
+    .set({
+      currentVersion: version,
+      updatedAt: new Date(),
+    })
+    .where(eq(scrapers.id, scraperId))
+    .returning();
+
+  return result[0] ?? null;
+}
