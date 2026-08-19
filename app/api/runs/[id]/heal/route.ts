@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import {
-  generateRepairForFailure,
-} from "@/lib/healing/repair-service";
+  healScraperRun,
+} from "@/lib/healing/healing-service";
 
 interface RouteContext {
   params: Promise<{
@@ -19,7 +19,7 @@ export async function POST(
       await context.params;
 
     const result =
-      await generateRepairForFailure(id);
+      await healScraperRun(id);
 
     return NextResponse.json({
       success: true,
@@ -27,28 +27,22 @@ export async function POST(
     });
   } catch (error) {
     console.error(
-      "Failed to generate repair:",
+      "Failed to heal scraper run:",
       error,
     );
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to generate repair";
-
-    const status =
-      message === "Failure not found"
-        ? 404
-        : message === "Scraper not found"
-          ? 404
-          : 500;
 
     return NextResponse.json(
       {
         success: false,
-        error: message,
+
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to heal scraper run",
       },
-      { status },
+      {
+        status: 500,
+      },
     );
   }
 }

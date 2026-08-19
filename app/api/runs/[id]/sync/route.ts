@@ -5,7 +5,8 @@ import {
   failScraperRun,
   getScraperRunById,
   getScraperById,
-  createFailure
+  createFailure,
+  getActiveScraperVersion,
 } from "@/lib/db/queries";
 
 import {
@@ -13,8 +14,8 @@ import {
 } from "@/lib/bright-data/client";
 
 import {
-  validateScraperOutput,
-} from "@/lib/validation/validate-scraper-output";
+  processScraperOutput,
+} from "@/lib/scraper/output-processor";
 
 interface RouteContext {
   params: Promise<{
@@ -82,93 +83,71 @@ export async function POST(
       }
     }
 
+    const scraper = await getScraperById(run.scraperId);
+
+    if (!scraper) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Scraper not found",
+        },
+        { status: 404 },
+      );
+    }
+
+    const activeVersion = await getActiveScraperVersion(run.scraperId);
+    const selectors = (activeVersion?.selectors as Record<string, string>) || undefined;
+
     /**
-     * Validate the actual scraper output.
+     * Validate the actual scraper output using the active version's selectors.
      */
-    const validation =
-      validateScraperOutput(result);
-
-    // if (!validation.valid) {
-    //   await failScraperRun(id, {
-    //     error: JSON.stringify(
-    //       validation.errors,
-    //     ),
-    //     durationMs: 0,
-    //   });
-
-    //   return NextResponse.json({
-    //     success: true,
-
-    //     data: {
-    //       status: "failed",
-    //       recordsFound:
-    //         validation.recordsFound,
-    //       errors: validation.errors,
-    //     },
-    //   });
-    // }
+    const validation = await processScraperOutput(
+      result,
+      scraper.url,
+      selectors,
+    );
 
     if (!validation.valid) {
-  const scraper = await getScraperById(
-    run.scraperId,
-  );
+      const failure = await createFailure({
+        scraperId: scraper.id,
+        runId: run.id,
+        type: "schema_invalid",
+        message: "Scraper output failed validation.",
+        oldSelector: selectors?.price || ".price_color",
+        expectedRecords: 20,
+        actualRecords: validation.recordsFound,
+      });
 
-  if (!scraper) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Scraper not found",
-      },
-      { status: 404 },
-    );
-  }
+      await failScraperRun(id, {
+        error: JSON.stringify(validation.errors),
+        durationMs: 0,
+      });
 
-  const failure = await createFailure({
-    scraperId: scraper.id,
-    runId: run.id,
-    type: "schema_invalid",
-    message:
-      "Scraper output failed validation.",
-    expectedRecords: 20,
-    actualRecords:
-      validation.recordsFound,
-  });
+      return NextResponse.json({
+        success: true,
 
-  await failScraperRun(id, {
-    error: JSON.stringify(
-      validation.errors,
-    ),
-    durationMs: 0,
-  });
+        data: {
+          status: "failed",
 
-  return NextResponse.json({
-    success: true,
+          recordsFound: validation.recordsFound,
 
-    data: {
-      status: "failed",
+          errors: validation.errors,
 
-      recordsFound:
-        validation.recordsFound,
-
-      errors: validation.errors,
-
-      failureId: failure?.id ?? null,
-    },
-  });
-}
+          failureId: failure?.id ?? null,
+        },
+      });
+    }
 
     /**
      * Successful extraction.
      */
-    const completed =
-      await completeScraperRun(id, {
-        recordsFound:
-          validation.recordsFound,
+    const completed = await completeScraperRun(id, {
+      recordsFound: validation.recordsFound,
 
-        durationMs: 0,
+      durationMs: 0,
 
-        output: validation.data,
-      });
+      output: validation.data,
+    });
 
     return NextResponse.json({
       success: true,
@@ -176,8 +155,7 @@ export async function POST(
       data: {
         status: "success",
 
-        recordsFound:
-          validation.recordsFound,
+        recordsFound: validation.recordsFound,
 
         run: completed,
       },

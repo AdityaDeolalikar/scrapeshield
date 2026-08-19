@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 
 import { db } from "./client";
 // import { scraperRuns, scrapers, failures } from "./schema";
@@ -412,41 +412,94 @@ export async function createScraperVersion(
  *
  * Only one version should be active at a time.
  */
+// export async function activateScraperVersion(
+//   scraperId: string,
+//   versionId: string,
+// ) {
+//   await db
+//     .update(scraperVersions)
+//     .set({
+//       isActive: false,
+//     })
+//     .where(
+//       eq(
+//         scraperVersions.scraperId,
+//         scraperId,
+//       ),
+//     );
+
+//   const result = await db
+//     .update(scraperVersions)
+//     .set({
+//       isActive: true,
+//     })
+//     .where(
+//       eq(
+//         scraperVersions.id,
+//         versionId,
+//       ),
+//     )
+//     .returning();
+
+//   return result[0] ?? null;
+// }
+
+
+/**
+ * Activate one scraper version and deactivate
+ * all other versions for the same scraper.
+ */
 export async function activateScraperVersion(
   scraperId: string,
   versionId: string,
 ) {
-  await db
-    .update(scraperVersions)
-    .set({
-      isActive: false,
-    })
-    .where(
-      eq(
-        scraperVersions.scraperId,
-        scraperId,
-      ),
-    );
+  return db.transaction(async (tx) => {
+    await tx
+      .update(scraperVersions)
+      .set({
+        isActive: false,
+      })
+      .where(
+        eq(
+          scraperVersions.scraperId,
+          scraperId,
+        ),
+      );
 
-  const result = await db
-    .update(scraperVersions)
-    .set({
-      isActive: true,
-    })
-    .where(
-      eq(
-        scraperVersions.id,
-        versionId,
-      ),
-    )
-    .returning();
+    const result = await tx
+      .update(scraperVersions)
+      .set({
+        isActive: true,
+      })
+      .where(
+        eq(scraperVersions.id, versionId),
+      )
+      .returning();
 
-  return result[0] ?? null;
+    return result[0] ?? null;
+  });
 }
 
 /**
- * Get the active version of a scraper.
+ * Get the currently active scraper version.
  */
+// export async function getActiveScraperVersion(
+//   scraperId: string,
+// ) {
+//   const result = await db
+//     .select()
+//     .from(scraperVersions)
+//     .where(
+//       eq(
+//         scraperVersions.scraperId,
+//         scraperId,
+//       ),
+//     )
+//     .limit(1);
+
+//   return result[0] ?? null;
+// }
+
 export async function getActiveScraperVersion(
   scraperId: string,
 ) {
@@ -454,19 +507,22 @@ export async function getActiveScraperVersion(
     .select()
     .from(scraperVersions)
     .where(
-      eq(
-        scraperVersions.scraperId,
-        scraperId,
+      and(
+        eq(
+          scraperVersions.scraperId,
+          scraperId,
+        ),
+        eq(
+          scraperVersions.isActive,
+          true,
+        ),
       ),
     )
-    .limit(100);
+    .limit(1);
 
-  return (
-    result.find(
-      (version) => version.isActive,
-    ) ?? null
-  );
+  return result[0] ?? null;
 }
+
 
 /**
  * Get the latest version of a scraper.
@@ -494,6 +550,25 @@ export async function getLatestScraperVersion(
 /**
  * Update the current version of a scraper.
  */
+// export async function updateScraperVersion(
+//   scraperId: string,
+//   version: string,
+// ) {
+//   const result = await db
+//     .update(scrapers)
+//     .set({
+//       currentVersion: version,
+//       updatedAt: new Date(),
+//     })
+//     .where(eq(scrapers.id, scraperId))
+//     .returning();
+
+//   return result[0] ?? null;
+// }
+
+/**
+ * Update the current version of a scraper.
+ */
 export async function updateScraperVersion(
   scraperId: string,
   version: string,
@@ -506,6 +581,147 @@ export async function updateScraperVersion(
     })
     .where(eq(scrapers.id, scraperId))
     .returning();
+
+  return result[0] ?? null;
+}
+
+/**
+ * Get a scraper version by ID.
+ */
+export async function getScraperVersionById(
+  id: string,
+) {
+  const result = await db
+    .select()
+    .from(scraperVersions)
+    .where(eq(scraperVersions.id, id))
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+/**
+ * Roll back a scraper to a previous version.
+ */
+export async function rollbackScraper(
+  scraperId: string,
+  previousVersion: string,
+) {
+  return db.transaction(async (tx) => {
+    await tx
+      .update(scraperVersions)
+      .set({
+        isActive: false,
+      })
+      .where(
+        eq(
+          scraperVersions.scraperId,
+          scraperId,
+        ),
+      );
+
+    const previous = await tx
+      .select()
+      .from(scraperVersions)
+      .where(
+        and(
+          eq(
+            scraperVersions.scraperId,
+            scraperId,
+          ),
+          eq(
+            scraperVersions.version,
+            previousVersion,
+          ),
+        ),
+      )
+      .limit(1);
+
+    if (!previous[0]) {
+      throw new Error(
+        `Previous scraper version ${previousVersion} was not found`,
+      );
+    }
+
+    await tx
+      .update(scraperVersions)
+      .set({
+        isActive: true,
+      })
+      .where(
+        eq(
+          scraperVersions.id,
+          previous[0].id,
+        ),
+      );
+
+    const scraper = await tx
+      .update(scrapers)
+      .set({
+        currentVersion: previousVersion,
+        status: "healthy",
+        updatedAt: new Date(),
+      })
+      .where(eq(scrapers.id, scraperId))
+      .returning();
+
+    return {
+      version: previous[0],
+      scraper: scraper[0] ?? null,
+    };
+  });
+}
+
+// export async function getFailuresByRunId(
+//   runId: string,
+// ) {
+//   return db
+//     .select()
+//     .from(failures)
+//     .where(
+//       eq(failures.runId, runId),
+//     )
+//     .orderBy(
+//       desc(failures.detectedAt),
+//     );
+// }
+
+
+export async function getLatestFailureForRun(
+  runId: string,
+) {
+  const result = await db
+    .select()
+    .from(failures)
+    .where(
+      eq(failures.runId, runId),
+    )
+    .orderBy(
+      desc(failures.detectedAt),
+    )
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+export async function getFailureByRunId(
+  runId: string,
+) {
+  const result = await db
+    .select()
+    .from(failures)
+    .where(
+      eq(
+        failures.runId,
+        runId,
+      ),
+    )
+    .orderBy(
+      desc(
+        failures.detectedAt,
+      ),
+    )
+    .limit(1);
 
   return result[0] ?? null;
 }

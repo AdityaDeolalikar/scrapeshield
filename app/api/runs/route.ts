@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 
-import {
-  createScraperRun,
-  getScraperById,
-} from "@/lib/db/queries";
+import { getScraperById } from "@/lib/db/queries";
+import { executeScraper } from "@/lib/scraper/executor";
 
 /**
  * POST /api/runs
  *
- * Creates a new scraper run for a given scraperId.
+ * Creates and executes a new scraper run for a given scraperId
+ * using the currently active scraper version.
  */
 export async function POST(request: Request) {
   try {
@@ -36,22 +35,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const run = await createScraperRun(body.scraperId);
+    const result = await executeScraper(body.scraperId);
 
     return NextResponse.json(
       {
         success: true,
-        data: run,
+        data: result,
       },
       { status: 201 },
     );
   } catch (error) {
-    console.error("Failed to create scraper run:", error);
+    console.error("Failed to execute scraper run:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create scraper run",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create scraper run",
       },
       { status: 500 },
     );
