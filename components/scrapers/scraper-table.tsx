@@ -127,7 +127,7 @@ export function ScraperTable({
                       <button
                         type="button"
                         onClick={() => onRunScraper(scraper.id)}
-                        className="rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 text-xs font-medium transition"
+                        className="rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 text-xs font-medium transition cursor-pointer"
                       >
                         Run
                       </button>

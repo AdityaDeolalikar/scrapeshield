@@ -298,11 +298,10 @@ export default function ScraperDetailPage({
                   {scraper.name}
                 </h1>
                 <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                    isCurrentlyFailed
+                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isCurrentlyFailed
                       ? "bg-red-500/10 text-red-400 border border-red-500/20"
                       : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  }`}
+                    }`}
                 >
                   <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
                   {isCurrentlyFailed ? "FAILED" : "HEALTHY"}
@@ -320,7 +319,7 @@ export default function ScraperDetailPage({
                 type="button"
                 onClick={handleRunScraper}
                 disabled={isExecuting || isSimulating || isHealing}
-                className="rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-xs font-medium transition disabled:opacity-50"
+                className="rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-xs font-medium transition disabled:opacity-50 cursor-pointer"
               >
                 {isExecuting ? "Running..." : "Run Scraper"}
               </button>
@@ -329,7 +328,7 @@ export default function ScraperDetailPage({
                 type="button"
                 onClick={handleSimulateFailure}
                 disabled={isExecuting || isSimulating || isHealing}
-                className="rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-4 py-2 text-xs font-medium transition disabled:opacity-50"
+                className="rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-4 py-2 text-xs font-medium transition disabled:opacity-50 cursor-pointer"
               >
                 {isSimulating ? "Simulating..." : "Simulate Scraper Failure"}
               </button>
@@ -376,13 +375,12 @@ export default function ScraperDetailPage({
             {Object.entries(activeSelectors).map(([field, selector]) => (
               <div key={field} className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-3">
                 <span className="text-xs font-medium text-zinc-400 capitalize">{field}</span>
-                <code className={`text-xs font-mono px-2 py-1 rounded ${
-                  field === "price" && selector === ".product_price"
+                <code className={`text-xs font-mono px-2 py-1 rounded ${field === "price" && selector === ".product_price"
                     ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold"
                     : field === "price" && isCurrentlyFailed
-                    ? "bg-red-500/20 text-red-300 border border-red-500/30 font-bold"
-                    : "bg-white/5 text-zinc-300"
-                }`}>
+                      ? "bg-red-500/20 text-red-300 border border-red-500/30 font-bold"
+                      : "bg-white/5 text-zinc-300"
+                  }`}>
                   {selector}
                 </code>
               </div>
@@ -575,13 +573,12 @@ export default function ScraperDetailPage({
                       <td className="px-6 py-4 text-zinc-300">{run.id.slice(0, 8)}...</td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-sans font-medium ${
-                            run.status === "success"
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-sans font-medium ${run.status === "success"
                               ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                               : run.status === "failed"
-                              ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                              : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                          }`}
+                                ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                                : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            }`}
                         >
                           {run.status.toUpperCase()}
                         </span>
