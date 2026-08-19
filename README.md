@@ -1362,6 +1362,10 @@ These are intentionally outside the current core implementation.
 
 ---
 
+AI Coding Assistants used: Chatgpt, Antigravity etc.
+
+---
+
 # 🧪 Verified End-to-End Scenario
 
 The complete recovery pipeline has been successfully tested against:
