@@ -41,6 +41,10 @@ export async function updateScraper(
     url?: string;
     collectorId?: string;
     description?: string;
+    status?: "healthy" | "warning" | "failed" | "healing";
+    healthScore?: number;
+    successRate?: number;
+    currentVersion?: string;
   },
 ) {
   const result = await db
@@ -60,6 +64,22 @@ export async function updateScraper(
 
       ...(input.description !== undefined && {
         description: input.description,
+      }),
+
+      ...(input.status !== undefined && {
+        status: input.status,
+      }),
+
+      ...(input.healthScore !== undefined && {
+        healthScore: input.healthScore,
+      }),
+
+      ...(input.successRate !== undefined && {
+        successRate: input.successRate,
+      }),
+
+      ...(input.currentVersion !== undefined && {
+        currentVersion: input.currentVersion,
       }),
 
       updatedAt: new Date(),
@@ -157,6 +177,18 @@ export async function completeScraperRun(
     .where(eq(scraperRuns.id, runId))
     .returning();
 
+  if (result[0]) {
+    await db
+      .update(scrapers)
+      .set({
+        status: "healthy",
+        healthScore: 100,
+        successRate: 100,
+        updatedAt: new Date(),
+      })
+      .where(eq(scrapers.id, result[0].scraperId));
+  }
+
   return result[0] ?? null;
 }
 
@@ -180,6 +212,17 @@ export async function failScraperRun(
     })
     .where(eq(scraperRuns.id, runId))
     .returning();
+
+  if (result[0]) {
+    await db
+      .update(scrapers)
+      .set({
+        status: "failed",
+        healthScore: 0,
+        updatedAt: new Date(),
+      })
+      .where(eq(scrapers.id, result[0].scraperId));
+  }
 
   return result[0] ?? null;
 }
@@ -714,6 +757,28 @@ export async function getFailureByRunId(
       eq(
         failures.runId,
         runId,
+      ),
+    )
+    .orderBy(
+      desc(
+        failures.detectedAt,
+      ),
+    )
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+export async function getLatestFailureForScraper(
+  scraperId: string,
+) {
+  const result = await db
+    .select()
+    .from(failures)
+    .where(
+      eq(
+        failures.scraperId,
+        scraperId,
       ),
     )
     .orderBy(

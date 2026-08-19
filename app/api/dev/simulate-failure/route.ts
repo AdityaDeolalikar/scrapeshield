@@ -4,6 +4,7 @@ import {
   createFailure,
   failScraperRun,
   getScraperRunById,
+  updateScraper,
 } from "@/lib/db/queries";
 
 export async function POST(request: Request) {
@@ -46,13 +47,17 @@ export async function POST(request: Request) {
           "Required field 'price' is missing from scraper output.",
         oldSelector: ".price_color",
         expectedRecords: 20,
-        actualRecords: 20,
+        actualRecords: 0,
       });
 
     await failScraperRun(run.id, {
       error:
         "Simulated schema validation failure: price field missing.",
       durationMs: 0,
+    });
+
+    await updateScraper(run.scraperId, {
+      status: "failed",
     });
 
     return NextResponse.json({

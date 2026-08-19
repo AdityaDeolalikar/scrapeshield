@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import type { Scraper } from "@/types/scraper";
 
 interface ScraperTableProps {
   scrapers: Scraper[];
   isLoading: boolean;
+  onRunScraper?: (scraperId: string) => void;
 }
 
 function getStatusClasses(status: Scraper["status"]) {
@@ -29,6 +31,7 @@ function getStatusClasses(status: Scraper["status"]) {
 export function ScraperTable({
   scrapers,
   isLoading,
+  onRunScraper,
 }: ScraperTableProps) {
   if (isLoading) {
     return (
@@ -63,7 +66,7 @@ export function ScraperTable({
               <th className="px-5 py-4 font-medium">Health</th>
               <th className="px-5 py-4 font-medium">Success</th>
               <th className="px-5 py-4 font-medium">Version</th>
-              <th className="px-5 py-4 font-medium">Created</th>
+              <th className="px-5 py-4 font-medium">Actions</th>
             </tr>
           </thead>
 
@@ -74,15 +77,18 @@ export function ScraperTable({
                 className="transition hover:bg-white/[0.02]"
               >
                 <td className="px-5 py-5">
-                  <div>
-                    <p className="font-medium text-white">
+                  <Link
+                    href={`/scrapers/${scraper.id}`}
+                    className="group block"
+                  >
+                    <p className="font-medium text-white group-hover:text-blue-400 transition-colors">
                       {scraper.name}
                     </p>
 
                     <p className="mt-1 max-w-xs truncate text-xs text-zinc-500">
                       {scraper.url}
                     </p>
-                  </div>
+                  </Link>
                 </td>
 
                 <td className="px-5 py-5">
@@ -110,15 +116,29 @@ export function ScraperTable({
                 </td>
 
                 <td className="px-5 py-5">
-                  <span className="rounded-md bg-white/5 px-2 py-1 text-xs text-zinc-300">
+                  <span className="rounded-md bg-white/5 px-2 py-1 text-xs font-mono text-zinc-300">
                     {scraper.currentVersion}
                   </span>
                 </td>
 
-                <td className="px-5 py-5 text-sm text-zinc-500">
-                  {new Date(
-                    scraper.createdAt,
-                  ).toLocaleDateString()}
+                <td className="px-5 py-5">
+                  <div className="flex items-center gap-2">
+                    {onRunScraper && (
+                      <button
+                        type="button"
+                        onClick={() => onRunScraper(scraper.id)}
+                        className="rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 text-xs font-medium transition"
+                      >
+                        Run
+                      </button>
+                    )}
+                    <Link
+                      href={`/scrapers/${scraper.id}`}
+                      className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition"
+                    >
+                      Details
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

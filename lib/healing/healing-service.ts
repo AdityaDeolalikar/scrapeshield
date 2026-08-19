@@ -11,6 +11,7 @@ import {
   completeScraperRun,
   attachBrightDataCollection,
   setRunCollecting,
+  updateScraper,
 } from "@/lib/db/queries";
 
 import {
@@ -196,6 +197,14 @@ export async function healScraperRun(
       }
     } else {
       rerun = await executeScraper(failure.scraperId);
+    }
+
+    if (rerun && rerun.status === "success") {
+      await updateScraper(failure.scraperId, {
+        status: "healthy",
+        healthScore: 100,
+        currentVersion: approval.newVersion,
+      });
     }
 
     return {

@@ -45,6 +45,23 @@ export default function ScrapersPage() {
     void fetchScrapers();
   }, [fetchScrapers]);
 
+  const handleRunScraper = async (scraperId: string) => {
+    try {
+      const res = await fetch("/api/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scraperId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to execute scraper");
+      }
+      await fetchScrapers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to execute scraper");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#08090a] text-white">
       <div className="mx-auto max-w-7xl px-6 py-10">
@@ -87,6 +104,7 @@ export default function ScrapersPage() {
             <ScraperTable
               scrapers={scrapers}
               isLoading={isLoading}
+              onRunScraper={handleRunScraper}
             />
           </section>
         </div>
